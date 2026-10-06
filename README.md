@@ -1,30 +1,27 @@
+Markdown
+
+# 🌍 GeoQuake — Real-Time Earthquake Tracking & Visualization Application
+
+GeoQuake, USGS (United States Geological Survey) API-dən real vaxt zəlzələ məlumatlarını çəkən, saxlayan, məsafəyə görə filtrləyən və interaktiv xəritə üzərində vizuallaşdıran full-stack tətbiqdir.
+
 ---
 
-### README Faylını GitHub-a Push Etmək Üçün:
+## 🏗 Proyekt Yapısı (Project Structure)
 
-Terminalda `GeoQuake` kök qovluğunda olduğunuzdan əmin olun və aşağıdakı əmrləri icra edin:
+---
 
-<Steps>
-  <Step subtitle="1-ci addım" title="Dəyişiklikləri əlavə edin">
-    ```bash
-    git add README.md
-    ```
-  </Step>
+## 🚀 Texnologiya Steki (Tech Stack)
 
-  <Step subtitle="2-ci addım" title="Commit yaradın">
-    ```bash
-    git commit -m "docs: add comprehensive README.md"
-    ```
-  </Step>
+* **Backend:** Python 3.10+, FastAPI, SQLAlchemy ORM, Pydantic, Uvicorn
+* **Database:** PostgreSQL (veya SQLite local test üçün), `psycopg2-binary`
+* **Frontend:** React.js (Vite), OpenStreetMap / Leaflet, Axios, CSS3
+* **External API:** USGS Earthquake Hazards Program API
 
-  <Step subtitle="3-cü addım" title="GitHub-a push edin">
-    ```bash
-    git push origin main
-    ```
-  </Step>
-</Steps>
+---
 
-<Elicitations message="README faylını əlavə edib push edə bildiniz?">
-  <Elicitation label="Push uğurlu oldu" query="README faylını push etdim. İndi backend və frontend-i eyni anda necə işə salım?"/>
-  <Elicitation label="Git xətası aldım" query="README faylını push edəndə xəta aldım, nə etməliyəm?"/>
-</Elicitations>
+## 🛠 Quraşdırma və İşə Salma (Setup & Installation)
+
+### 1. Repository-ni klonlayın
+```bash
+git clone [https://github.com/mickael044/GeoQuake.git](https://github.com/mickael044/GeoQuake.git)
+cd GeoQuake
