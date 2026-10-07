@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 
-const API = "http://localhost:8000";
+const API = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
 function Recenter({ center }) {
   const map = useMap();

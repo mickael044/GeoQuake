@@ -1,0 +1,9 @@
+terminal 1
+    cd ~/Downloads/GeoQuake/02_Backend
+    ./venv/bin/python -m uvicorn app.main:app --reload
+
+    postqre islemese: sudo systemctl start postgresql
+
+terminal 2
+    cd ~/Downloads/GeoQuake/03_Frontend
+    npm run dev
