@@ -22,7 +22,13 @@ def fetch_and_store(db: Session, lat: float, lon: float, radius_km: float, days:
         "orderby": "time",
         "limit": 500,
     }
-    resp = httpx.get(USGS_URL, params=params, timeout=20)
+    resp = httpx.get(
+           USGS_URL,
+           params=params,
+           timeout=30,
+           headers={"User-Agent": "GeoQuake/1.0"},
+           follow_redirects=True,
+    )
     resp.raise_for_status()
 
     rows = []
