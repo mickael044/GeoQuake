@@ -49,8 +49,11 @@ def nearby_earthquakes(
     """USGS-dən məlumatı yeniləyir, sonra bazadan yaxın zəlzələləri qaytarır."""
     try:
         fetch_and_store(db, lat, lon, radius_km, days, min_magnitude)
-    except httpx.HTTPError:
-        raise HTTPException(status_code=502, detail="USGS API əlçatan deyil")
+    except httpx.HTTPError as e:
+           raise HTTPException(
+               status_code=502,
+               detail=f"USGS API əlçatan deyil: {type(e).__name__}: {e}",
+           )
 
     since = datetime.now(timezone.utc) - timedelta(days=days)
     candidates = (
