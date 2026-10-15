@@ -2,15 +2,19 @@ from datetime import datetime, timedelta, timezone
 from math import asin, cos, radians, sin, sqrt
 from typing import List
 
+import logging
+
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from . import models, schemas
 from .database import Base, engine, get_db
 from .usgs import fetch_and_store
 
+logger = logging.getLogger("geoquake")
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="GeoQuake API")
@@ -20,6 +24,12 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+
+
+@app.get("/health")
+def health():
+    """DB-siz yüngül yoxlama: frontend serveri oyatmaq üçün istifadə edir."""
+    return {"status": "ok"}
 
 
 def haversine_km(lat1, lon1, lat2, lon2) -> float:
@@ -50,18 +60,33 @@ def nearby_earthquakes(
     try:
         fetch_and_store(db, lat, lon, radius_km, days, min_magnitude)
     except httpx.HTTPError as e:
-           raise HTTPException(
-               status_code=502,
-               detail=f"USGS API əlçatan deyil: {type(e).__name__}: {e}",
-           )
+        raise HTTPException(
+            status_code=502,
+            detail=f"USGS API əlçatan deyil: {type(e).__name__}: {e}",
+        )
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("DB error while storing USGS data")
+        raise HTTPException(status_code=503, detail="Verilənlər bazası əlçatan deyil. Bir az sonra yenidən cəhd edin.")
 
     since = datetime.now(timezone.utc) - timedelta(days=days)
-    candidates = (
+    # Bounding box: bütün cədvəli Python-a yükləmək əvəzinə əvvəlcə bazada süzürük
+    dlat = radius_km / 111.0
+    dlon = radius_km / (111.0 * max(cos(radians(lat)), 0.01))
+    query = (
         db.query(models.Earthquake)
         .filter(models.Earthquake.time >= since)
         .filter(models.Earthquake.magnitude >= min_magnitude)
-        .all()
+        .filter(models.Earthquake.latitude.between(lat - dlat, lat + dlat))
     )
+    if lon - dlon >= -180 and lon + dlon <= 180:  # tarix xətti yaxınlığında süzmə tətbiq olunmur
+        query = query.filter(models.Earthquake.longitude.between(lon - dlon, lon + dlon))
+    try:
+        candidates = query.all()
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("DB error while reading earthquakes")
+        raise HTTPException(status_code=503, detail="Verilənlər bazası əlçatan deyil. Bir az sonra yenidən cəhd edin.")
 
     result = []
     for q in candidates:
