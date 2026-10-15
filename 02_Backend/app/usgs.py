@@ -47,6 +47,7 @@ def fetch_and_store(db: Session, lat: float, lon: float, radius_km: float, days:
             }
         )
 
+    rows = list({r["id"]: r for r in rows}.values())
     if rows:
         stmt = insert(Earthquake).values(rows)
         stmt = stmt.on_conflict_do_update(
