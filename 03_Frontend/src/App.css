@@ -3,7 +3,7 @@ body { margin: 0; font-family: system-ui, sans-serif; color: #1c1b1f; }
 .app { display: flex; flex-direction: column; height: 100vh; }
 .bar { display: flex; gap: 16px; align-items: center; padding: 10px 16px; background: #22303c; color: #fff; flex-wrap: wrap; }
 .bar h1 { margin: 0; font-size: 20px; }
-.search { display: flex; gap: 8px; flex: 1; min-width: 240px; max-width: 480px; }
+.search { display: flex; gap: 8px; flex: 1; min-width: 240px; max-width: 560px; }
 .search input { flex: 1; padding: 8px 10px; border: 0; border-radius: 4px; font-size: 15px; }
 .search button { padding: 8px 16px; border: 0; border-radius: 4px; background: #e8a33d; font-weight: 600; cursor: pointer; }
 .search button:disabled { opacity: .6; cursor: default; }
@@ -15,9 +15,18 @@ body { margin: 0; font-family: system-ui, sans-serif; color: #1c1b1f; }
 .list h2 { font-size: 16px; margin: 0 0 8px; }
 .list ul { list-style: none; margin: 0; padding: 0; }
 .list li { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eee; }
-.mag { min-width: 56px; font-weight: 700; color: #b3261e; }
+.mag { min-width: 56px; font-weight: 700; }
 .place { font-size: 14px; }
 .meta, .hint { font-size: 13px; color: #555; }
+.search button.near { background: #fff; }
+.radii { display: flex; gap: 4px; flex-wrap: wrap; }
+.radii button { padding: 6px 10px; border: 1px solid #5d7183; border-radius: 4px; background: transparent; color: #fff; cursor: pointer; font-size: 13px; }
+.radii button.active { background: #1d6fd8; border-color: #1d6fd8; font-weight: 600; }
+.radii button:disabled { opacity: .6; cursor: default; }
+.radii button:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.notice { margin: 0; padding: 8px 16px; background: #fff4d6; color: #6b4e00; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: #555; margin-bottom: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
 @media (max-width: 800px) {
   .content { flex-direction: column; }
   .list { width: 100%; border-left: 0; border-top: 1px solid #ddd; max-height: 40vh; }
