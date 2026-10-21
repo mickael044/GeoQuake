@@ -30,6 +30,8 @@ function saveOpts(o) {
 // Developerlə əlaqə (Menu → Developerlə əlaqə)
 const CONTACT_EMAIL = "mikayilhesenov2007@gmail.com";
 const LINKEDIN_URL = "https://www.linkedin.com/in/mikayil-hasanov-23b1b1385/";
+// Layihə versiyası (Semantic Versioning: MAJOR.MINOR.PATCH). Hər yeniləmədə burada dəyiş.
+const APP_VERSION = "1.4.0";
 const BAKU = [40.4093, 49.8671];
 // ---------- Dillər / Languages ----------
 const T = {
@@ -63,6 +65,7 @@ const T = {
     srcQuakes: "Zəlzələ məlumatı", srcMap: "Xəritə", srcSearch: "Ərazi axtarışı",
     contact: "Developerlə əlaqə", contactText: "Sual, təklif və ya xəta barədə yaza bilərsiniz.",
     developer: "Developer", email: "E-poçt", linkedin: "LinkedIn",
+    version: "Versiya",
   },
   en: {
     langName: "English",
@@ -94,6 +97,7 @@ const T = {
     srcQuakes: "Earthquake data", srcMap: "Map", srcSearch: "Place search",
     contact: "Contact the developer", contactText: "Questions, suggestions or bug reports are welcome.",
     developer: "Developer", email: "Email", linkedin: "LinkedIn",
+    version: "Version",
   },
 };
 
@@ -485,6 +489,10 @@ export default function App() {
                 {t.linkedin}: <a href={LINKEDIN_URL} target="_blank" rel="noreferrer">Mikayil Hasanov</a>
               </li>
             </ul>
+
+            <p className="aboutp" style={{ marginTop: 24, color: "#5d7183" }}>
+              GeoQuake · {t.version}: v{APP_VERSION}
+            </p>
           </aside>
         </div>
       )}
