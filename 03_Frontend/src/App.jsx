@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { MapContainer, TileLayer, CircleMarker, Circle, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Circle, Popup, useMap, useMapEvents } from "react-leaflet";
 
 const API = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 const RADII = [10, 25, 50, 100, 250];
@@ -8,22 +8,43 @@ const ZOOM = { 10: 11, 25: 10, 50: 9, 100: 8, 250: 7 };
 const BAKU = [40.4093, 49.8671];
 const TIMEOUT = 90000; // Render pulsuz planında oyanma 30-60 san çəkə bilər
 
-const LEGEND = [
-  { color: "#388e3c", label: "< 3" },
-  { color: "#fbc02d", label: "3 – 3.9" },
-  { color: "#f57c00", label: "4 – 4.9" },
-  { color: "#d32f2f", label: "5 – 5.9" },
-  { color: "#7f0000", label: "6+" },
+// Rəng = dərinlik (dərin → tünd), ölçü = magnitude
+const DEPTHS = [
+  { max: 10, color: "#fff2a8", label: "0–10" },
+  { max: 30, color: "#fdbf6f", label: "10–30" },
+  { max: 70, color: "#f4793a", label: "30–70" },
+  { max: 300, color: "#b2282e", label: "70–300" },
+  { max: Infinity, color: "#4b0a2b", label: "300+" },
 ];
-const magColor = (m) => (m >= 6 ? "#7f0000" : m >= 5 ? "#d32f2f" : m >= 4 ? "#f57c00" : m >= 3 ? "#fbc02d" : "#388e3c");
-const markerSize = (m) => 4 + (m || 0) * 2;
+const depthColor = (d) => (DEPTHS.find((x) => (d ?? 0) < x.max) || DEPTHS[DEPTHS.length - 1]).color;
+const markerSize = (m) => Math.max(4, Math.pow(m || 0, 1.6)); // M3≈6, M5≈13, M7≈22
+const SIZE_SAMPLES = [3, 5, 7];
 const fmtDate = (iso) => new Date(iso).toLocaleString("az-AZ");
+const usgsLink = (id) => `https://earthquake.usgs.gov/earthquakes/eventpage/${id}`;
+const fmtCoord = (lat, lon) => `${Math.abs(lat).toFixed(3)}°${lat >= 0 ? "N" : "S"} ${Math.abs(lon).toFixed(3)}°${lon >= 0 ? "E" : "W"}`;
+function ago(iso) {
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+  if (min < 60) return `${min} dəq əvvəl`;
+  if (min < 1440) return `${Math.round(min / 60)} saat əvvəl`;
+  return `${Math.round(min / 1440)} gün əvvəl`;
+}
+const SORTS = {
+  time: { label: "Ən yeni", fn: (a, b) => new Date(b.time) - new Date(a.time) },
+  mag: { label: "Ən güclü", fn: (a, b) => (b.magnitude ?? -1) - (a.magnitude ?? -1) },
+  dist: { label: "Ən yaxın", fn: (a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0) },
+};
 
 function Recenter({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
     map.setView(center, zoom);
   }, [center, zoom, map]);
+  return null;
+}
+
+function BoundsTracker({ onBounds }) {
+  const map = useMapEvents({ moveend: () => onBounds(map.getBounds()) });
+  useEffect(() => onBounds(map.getBounds()), [map]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -36,6 +57,12 @@ export default function App() {
   const [waking, setWaking] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
+  const [sort, setSort] = useState("time");
+  const [onlyOnMap, setOnlyOnMap] = useState(false);
+  const [bounds, setBounds] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
+  const [map, setMap] = useState(null);
+  const markers = useRef({});
 
   // Render serverini əvvəlcədən oyat; 3 saniyədən çox çəksə istifadəçiyə bildir
   useEffect(() => {
@@ -71,6 +98,7 @@ export default function App() {
     });
     setPoint({ lat, lon });
     setQuakes(res.data);
+    setSelectedId(null);
     setSearched(true);
   }
 
@@ -116,6 +144,19 @@ export default function App() {
     if (point) run(() => fetchQuakes(point.lat, point.lon, r));
   }
 
+  const visible = useMemo(() => {
+    const list = onlyOnMap && bounds ? quakes.filter((q) => bounds.contains([q.latitude, q.longitude])) : quakes;
+    return [...list].sort(SORTS[sort].fn);
+  }, [quakes, sort, onlyOnMap, bounds]);
+
+  function selectQuake(q) {
+    setSelectedId(q.id);
+    if (map) {
+      map.setView([q.latitude, q.longitude], Math.max(map.getZoom(), 9));
+      markers.current[q.id]?.openPopup();
+    }
+  }
+
   const center = point ? [point.lat, point.lon] : BAKU;
 
   return (
@@ -150,7 +191,8 @@ export default function App() {
       {error && <p className="error">{error}</p>}
 
       <main className="content">
-        <MapContainer center={center} zoom={ZOOM[radius]} className="map">
+        <MapContainer center={center} zoom={ZOOM[radius]} className="map" ref={setMap}>
+          <BoundsTracker onBounds={setBounds} />
           <Recenter center={center} zoom={ZOOM[radius]} />
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
           {point && (
@@ -164,46 +206,92 @@ export default function App() {
           {quakes.map((q) => (
             <CircleMarker
               key={q.id}
+              ref={(el) => {
+                if (el) markers.current[q.id] = el;
+              }}
               center={[q.latitude, q.longitude]}
               radius={markerSize(q.magnitude)}
-              pathOptions={{ color: magColor(q.magnitude), fillColor: magColor(q.magnitude), fillOpacity: 0.55 }}
+              pathOptions={{
+                color: q.id === selectedId ? "#0b2545" : "#333",
+                weight: q.id === selectedId ? 3 : 1,
+                fillColor: depthColor(q.depth),
+                fillOpacity: 0.85,
+              }}
+              eventHandlers={{ click: () => setSelectedId(q.id) }}
             >
               <Popup>
-                <b>M {q.magnitude ?? "?"}</b> — {q.place}
-                <br />
-                Depth: {q.depth} km
-                <br />
-                Məsafə: {q.distance_km} km
-                <br />
-                {fmtDate(q.time)}
+                <a href={usgsLink(q.id)} target="_blank" rel="noreferrer">
+                  <b>M {q.magnitude ?? "?"}</b> — {q.place}
+                </a>
+                <table className="popup">
+                  <tbody>
+                    <tr><th>Vaxt</th><td>{fmtDate(q.time)}</td></tr>
+                    <tr><th>Koordinat</th><td>{fmtCoord(q.latitude, q.longitude)}</td></tr>
+                    <tr><th>Dərinlik</th><td>{q.depth} km</td></tr>
+                    <tr><th>Məsafə</th><td>{q.distance_km} km</td></tr>
+                  </tbody>
+                </table>
               </Popup>
             </CircleMarker>
           ))}
         </MapContainer>
 
         <aside className="list">
-          <h2>Yaxın zəlzələlər ({quakes.length})</h2>
-          <div className="legend" aria-label="Magnitude rəngləri">
-            {LEGEND.map((l) => (
+          <h2>
+            Yaxın zəlzələlər ({visible.length}
+            {visible.length !== quakes.length ? ` / ${quakes.length}` : ""})
+          </h2>
+          <div className="listtools">
+            <label>
+              Sıralama
+              <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                {Object.entries(SORTS).map(([k, v]) => (
+                  <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={onlyOnMap} onChange={(e) => setOnlyOnMap(e.target.checked)} />
+              Yalnız xəritədə görünənlər
+            </label>
+          </div>
+          <div className="legend" aria-label="Rəng dərinliyi göstərir">
+            <b>Rəng = dərinlik (km):</b>
+            {DEPTHS.map((l) => (
               <span key={l.label}>
                 <i style={{ background: l.color }} /> {l.label}
               </span>
             ))}
           </div>
+          <div className="legend" aria-label="Ölçü magnitude göstərir">
+            <b>Ölçü = magnitude:</b>
+            {SIZE_SAMPLES.map((m) => (
+              <span key={m}>
+                <i className="sz" style={{ width: 2 * markerSize(m), height: 2 * markerSize(m) }} /> M{m}
+              </span>
+            ))}
+          </div>
           {!searched && <p className="hint">Ərazi adı yazıb Search düyməsinə basın və ya “Near me” seçin.</p>}
           {searched && quakes.length === 0 && <p className="hint">Bu ərazidə {radius} km radiusda zəlzələ tapılmadı.</p>}
+          {searched && quakes.length > 0 && visible.length === 0 && <p className="hint">Xəritənin görünən hissəsində zəlzələ yoxdur.</p>}
           <ul>
-            {quakes.map((q) => (
-              <li key={q.id}>
-                <span className="mag" style={{ color: magColor(q.magnitude) }}>
-                  M {q.magnitude ?? "?"}
-                </span>
-                <div>
-                  <div className="place">{q.place}</div>
-                  <div className="meta">
-                    Depth: {q.depth} km · {q.distance_km} km uzaqda · {fmtDate(q.time)}
+            {visible.map((q) => (
+              <li key={q.id} className={q.id === selectedId ? "sel" : ""}>
+                <button className="item" onClick={() => selectQuake(q)}>
+                  <span className="mag">
+                    <i className="dot" style={{ background: depthColor(q.depth) }} />
+                    M {q.magnitude ?? "?"}
+                  </span>
+                  <div>
+                    <div className="place">{q.place}</div>
+                    <div className="meta">
+                      {ago(q.time)} · {fmtDate(q.time)}
+                    </div>
+                    <div className="meta">
+                      Depth: {q.depth} km · {q.distance_km} km uzaqda
+                    </div>
                   </div>
-                </div>
+                </button>
               </li>
             ))}
           </ul>
