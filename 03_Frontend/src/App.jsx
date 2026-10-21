@@ -27,6 +27,9 @@ function saveOpts(o) {
     /* brauzer saxlamağa icazə vermir — vacib deyil */
   }
 }
+// Developerlə əlaqə (Menu → Developerlə əlaqə)
+const CONTACT_EMAIL = "mikayilhesenov2007@gmail.com";
+const LINKEDIN_URL = "https://www.linkedin.com/in/mikayil-hasanov-23b1b1385/";
 const BAKU = [40.4093, 49.8671];
 const TIMEOUT = 90000; // Render pulsuz planında oyanma 30-60 san çəkə bilər
 
@@ -391,6 +394,18 @@ export default function App() {
               <li>Xəritə: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></li>
               <li>Ərazi axtarışı: Nominatim</li>
               <li><a href="https://github.com/mickael044/GeoQuake" target="_blank" rel="noreferrer">GitHub</a></li>
+            </ul>
+
+            <h3>Developerlə əlaqə</h3>
+            <p className="aboutp">Sual, təklif və ya xəta barədə yaza bilərsiniz.</p>
+            <ul className="aboutl">
+              <li>Developer: Mikayil Hasanov</li>
+              <li>
+                E-poçt: <a href={`mailto:${CONTACT_EMAIL}?subject=GeoQuake`}>{CONTACT_EMAIL}</a>
+              </li>
+              <li>
+                LinkedIn: <a href={LINKEDIN_URL} target="_blank" rel="noreferrer">Mikayil Hasanov</a>
+              </li>
             </ul>
           </aside>
         </div>
