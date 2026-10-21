@@ -43,6 +43,21 @@ li.sel .item { background: #dcebff; }
 .legend i.sz { background: #ddd; }
 .mag { color: #0b2545; display: flex; align-items: center; gap: 6px; }
 .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid #333; flex: none; }
+.menubtn { margin-left: auto; padding: 8px 14px; border: 1px solid #5d7183; border-radius: 4px; background: transparent; color: #fff; cursor: pointer; font-size: 14px; }
+.menubtn:hover { background: #13315c; }
+.menubtn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.overlay { position: fixed; inset: 0; background: rgba(11, 37, 69, .45); z-index: 2000; display: flex; justify-content: flex-end; }
+.drawer { width: min(340px, 100%); height: 100%; overflow-y: auto; background: #fff; color: #0b2545; padding: 16px 20px 24px; box-shadow: -8px 0 30px rgba(11, 37, 69, .25); }
+.drawerhead { display: flex; justify-content: space-between; align-items: center; }
+.drawerhead h2 { margin: 0; font-size: 20px; }
+.drawerhead button { border: 0; background: none; font-size: 20px; cursor: pointer; padding: 6px 10px; }
+.drawer h3 { margin: 22px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #5d7183; border-bottom: 1px solid #d9e1ec; padding-bottom: 6px; }
+.opt { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; font-size: 14px; }
+.opt.check { flex-direction: row; align-items: center; gap: 8px; }
+.opt select { padding: 7px 8px; border: 1px solid #b8c4d6; border-radius: 4px; font-size: 14px; }
+.reset { padding: 8px 12px; border: 1px solid #b8c4d6; border-radius: 4px; background: #f4f7fb; cursor: pointer; }
+.aboutp, .aboutl { font-size: 13px; color: #333; line-height: 1.5; }
+.aboutl { padding-left: 18px; margin: 6px 0 0; }
 @media (max-width: 800px) {
   .content { flex-direction: column; }
   .list { width: 100%; border-left: 0; border-top: 1px solid #ddd; max-height: 40vh; }
