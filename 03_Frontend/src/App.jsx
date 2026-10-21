@@ -5,13 +5,13 @@ import { MapContainer, TileLayer, CircleMarker, Circle, Popup, useMap, useMapEve
 const API = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 const RADII = [10, 25, 50, 100, 250];
 const ZOOM = { 10: 11, 25: 10, 50: 9, 100: 8, 250: 7 };
-const DEFAULT_OPTS = { days: 365, minMag: 2.5, base: "osm", circle: true, legend: true };
-const DAYS = [{ v: 1, l: "Son 24 saat" }, { v: 7, l: "Son 7 gün" }, { v: 30, l: "Son 30 gün" }, { v: 365, l: "Son 1 il" }];
+const DEFAULT_OPTS = { days: 365, minMag: 2.5, base: "osm", circle: true, legend: true, lang: "az" };
+const DAYS = [1, 7, 30, 365];
 const MAGS = [2.5, 3, 4, 5, 6];
 const BASES = {
-  osm: { label: "Küçə xəritəsi (OpenStreetMap)", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", attr: "&copy; OpenStreetMap contributors", maxZoom: 19 },
-  topo: { label: "Relyef (OpenTopoMap)", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", attr: "&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA)", maxZoom: 17 },
-  sat: { label: "Peyk (Esri)", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attr: "Tiles &copy; Esri", maxZoom: 18 },
+  osm: { url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", attr: "&copy; OpenStreetMap contributors", maxZoom: 19 },
+  topo: { url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", attr: "&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA)", maxZoom: 17 },
+  sat: { url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attr: "Tiles &copy; Esri", maxZoom: 18 },
 };
 function loadOpts() {
   try {
@@ -31,6 +31,72 @@ function saveOpts(o) {
 const CONTACT_EMAIL = "mikayilhesenov2007@gmail.com";
 const LINKEDIN_URL = "https://www.linkedin.com/in/mikayil-hasanov-23b1b1385/";
 const BAKU = [40.4093, 49.8671];
+// ---------- Dillər / Languages ----------
+const T = {
+  az: {
+    langName: "Azərbaycanca",
+    placeholder: "Ərazi adı, məs. Baku", placeLabel: "Ərazi adı",
+    search: "Axtar", searching: "Axtarılır...", nearMe: "📍 Mənə yaxın", nearMeTitle: "Mövqeyimə yaxın zəlzələlər",
+    radiusLabel: "Radius (km)", menuBtn: "☰ Menyu",
+    waking: "Server oyanır, bu 30–60 saniyə çəkə bilər…",
+    loadFail: "Məlumat yüklənmədi. Server oyanır ola bilər — 30–60 saniyədən sonra yenidən cəhd edin.",
+    enterPlace: "Ərazi adı daxil edin.", notFound: (n) => `"${n}" tapılmadı. Başqa ad yoxlayın.`,
+    noGeo: "Brauzeriniz geolokasiyanı dəstəkləmir.", geoDenied: "Mövqe icazəsi verilmədi. Ərazi adı ilə axtarın.",
+    selectedPoint: "Seçilmiş nöqtə",
+    time: "Vaxt", coords: "Koordinat", depth: "Dərinlik", distance: "Məsafə", away: "uzaqda",
+    listTitle: "Yaxın zəlzələlər", sortLabel: "Sıralama", onlyOnMap: "Yalnız xəritədə görünənlər",
+    sorts: { time: "Ən yeni", mag: "Ən güclü", dist: "Ən yaxın" },
+    legendDepthAria: "Rəng dərinliyi göstərir", legendDepth: "Rəng = dərinlik (km):",
+    legendSizeAria: "Ölçü magnitude göstərir", legendSize: "Ölçü = magnitude:",
+    hintStart: "Ərazi adı yazıb Axtar düyməsinə basın və ya “Mənə yaxın” seçin.",
+    noResults: (r) => `Bu ərazidə ${r} km radiusda zəlzələ tapılmadı.`,
+    noneVisible: "Xəritənin görünən hissəsində zəlzələ yoxdur.",
+    agoMin: "dəq əvvəl", agoHour: "saat əvvəl", agoDay: "gün əvvəl",
+    menu: "Menyu", close: "Bağla", options: "Seçimlər",
+    language: "Dil",
+    period: "Zaman dövrü", days: { 1: "Son 24 saat", 7: "Son 7 gün", 30: "Son 30 gün", 365: "Son 1 il" },
+    minMag: "Minimum magnitude", mapType: "Xəritə növü",
+    bases: { osm: "Küçə xəritəsi (OpenStreetMap)", topo: "Relyef (OpenTopoMap)", sat: "Peyk (Esri)" },
+    showCircle: "Radius dairəsini göstər", showLegend: "Rəng və ölçü izahını göstər", reset: "Defolt ayarlara qayıt",
+    about: "Haqqında",
+    aboutText: "GeoQuake zəlzələ məlumatlarını göstərir; zəlzələnin nə vaxt baş verəcəyini proqnozlaşdırmır.",
+    srcQuakes: "Zəlzələ məlumatı", srcMap: "Xəritə", srcSearch: "Ərazi axtarışı",
+    contact: "Developerlə əlaqə", contactText: "Sual, təklif və ya xəta barədə yaza bilərsiniz.",
+    developer: "Developer", email: "E-poçt", linkedin: "LinkedIn",
+  },
+  en: {
+    langName: "English",
+    placeholder: "Place name, e.g. Baku", placeLabel: "Place name",
+    search: "Search", searching: "Searching...", nearMe: "📍 Near me", nearMeTitle: "Earthquakes near my location",
+    radiusLabel: "Radius (km)", menuBtn: "☰ Menu",
+    waking: "The server is waking up, this can take 30–60 seconds…",
+    loadFail: "Could not load data. The server may still be waking up — please try again in 30–60 seconds.",
+    enterPlace: "Please enter a place name.", notFound: (n) => `"${n}" was not found. Try another name.`,
+    noGeo: "Your browser does not support geolocation.", geoDenied: "Location permission was denied. Search by place name instead.",
+    selectedPoint: "Selected point",
+    time: "Time", coords: "Coordinates", depth: "Depth", distance: "Distance", away: "away",
+    listTitle: "Nearby earthquakes", sortLabel: "Sort by", onlyOnMap: "Only those visible on the map",
+    sorts: { time: "Newest", mag: "Strongest", dist: "Nearest" },
+    legendDepthAria: "Color shows depth", legendDepth: "Color = depth (km):",
+    legendSizeAria: "Size shows magnitude", legendSize: "Size = magnitude:",
+    hintStart: "Type a place name and press Search, or choose “Near me”.",
+    noResults: (r) => `No earthquakes found within ${r} km of this location.`,
+    noneVisible: "No earthquakes in the visible part of the map.",
+    agoMin: "min ago", agoHour: "h ago", agoDay: "d ago",
+    menu: "Menu", close: "Close", options: "Options",
+    language: "Language",
+    period: "Time period", days: { 1: "Last 24 hours", 7: "Last 7 days", 30: "Last 30 days", 365: "Last year" },
+    minMag: "Minimum magnitude", mapType: "Map type",
+    bases: { osm: "Street map (OpenStreetMap)", topo: "Terrain (OpenTopoMap)", sat: "Satellite (Esri)" },
+    showCircle: "Show radius circle", showLegend: "Show color and size legend", reset: "Reset to defaults",
+    about: "About",
+    aboutText: "GeoQuake shows earthquake data; it does not predict when an earthquake will happen.",
+    srcQuakes: "Earthquake data", srcMap: "Map", srcSearch: "Place search",
+    contact: "Contact the developer", contactText: "Questions, suggestions or bug reports are welcome.",
+    developer: "Developer", email: "Email", linkedin: "LinkedIn",
+  },
+};
+
 const TIMEOUT = 90000; // Render pulsuz planında oyanma 30-60 san çəkə bilər
 
 // Rəng = dərinlik (dərin → tünd), ölçü = magnitude
@@ -44,20 +110,20 @@ const DEPTHS = [
 const depthColor = (d) => (DEPTHS.find((x) => (d ?? 0) < x.max) || DEPTHS[DEPTHS.length - 1]).color;
 const markerSize = (m) => Math.max(4, Math.pow(m || 0, 1.6)); // M3≈6, M5≈13, M7≈22
 const SIZE_SAMPLES = [3, 5, 7];
-const fmtDate = (iso) => new Date(iso).toLocaleString("az-AZ");
+const fmtDate = (iso, lang) => new Date(iso).toLocaleString(lang === "en" ? "en-GB" : "az-AZ");
 const fmtDepth = (d) => (d == null ? "?" : Number(d).toFixed(1).replace(/\.0$/, ""));
 const usgsLink = (id) => `https://earthquake.usgs.gov/earthquakes/eventpage/${id}`;
 const fmtCoord = (lat, lon) => `${Math.abs(lat).toFixed(3)}°${lat >= 0 ? "N" : "S"} ${Math.abs(lon).toFixed(3)}°${lon >= 0 ? "E" : "W"}`;
-function ago(iso) {
+function ago(iso, t) {
   const min = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
-  if (min < 60) return `${min} dəq əvvəl`;
-  if (min < 1440) return `${Math.round(min / 60)} saat əvvəl`;
-  return `${Math.round(min / 1440)} gün əvvəl`;
+  if (min < 60) return `${min} ${t.agoMin}`;
+  if (min < 1440) return `${Math.round(min / 60)} ${t.agoHour}`;
+  return `${Math.round(min / 1440)} ${t.agoDay}`;
 }
 const SORTS = {
-  time: { label: "Ən yeni", fn: (a, b) => new Date(b.time) - new Date(a.time) },
-  mag: { label: "Ən güclü", fn: (a, b) => (b.magnitude ?? -1) - (a.magnitude ?? -1) },
-  dist: { label: "Ən yaxın", fn: (a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0) },
+  time: { fn: (a, b) => new Date(b.time) - new Date(a.time) },
+  mag: { fn: (a, b) => (b.magnitude ?? -1) - (a.magnitude ?? -1) },
+  dist: { fn: (a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0) },
 };
 
 function Recenter({ lat, lon, zoom, focusKey }) {
@@ -91,22 +157,23 @@ export default function App() {
   const [focusKey, setFocusKey] = useState(0);
   const [opts, setOpts] = useState(loadOpts);
   const [menuOpen, setMenuOpen] = useState(false);
+  const t = T[opts.lang] || T.az;
   const [map, setMap] = useState(null);
   const markers = useRef({});
 
   // Render serverini əvvəlcədən oyat; 3 saniyədən çox çəksə istifadəçiyə bildir
   useEffect(() => {
     let done = false;
-    const t = setTimeout(() => !done && setWaking(true), 3000);
+    const timer = setTimeout(() => !done && setWaking(true), 3000);
     axios
       .get(`${API}/health`, { timeout: TIMEOUT })
       .catch(() => {})
       .finally(() => {
         done = true;
-        clearTimeout(t);
+        clearTimeout(timer);
         setWaking(false);
       });
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, []);
 
   async function run(task) {
@@ -115,7 +182,7 @@ export default function App() {
     try {
       await task();
     } catch (e) {
-      setError(e.userMessage || "Məlumat yüklənmədi. Server oyanır ola bilər — 30–60 saniyədən sonra yenidən cəhd edin.");
+      setError(e.userMessage || t.loadFail);
     } finally {
       setLoading(false);
     }
@@ -136,7 +203,7 @@ export default function App() {
   function search() {
     const name = query.trim();
     if (!name) {
-      setError("Ərazi adı daxil edin.");
+      setError(t.enterPlace);
       return;
     }
     run(async () => {
@@ -146,7 +213,7 @@ export default function App() {
       if (!geo.data.length) {
         setQuakes([]);
         const err = new Error("not found");
-        err.userMessage = `"${name}" tapılmadı. Başqa ad yoxlayın.`;
+        err.userMessage = t.notFound(name);
         throw err;
       }
       await fetchQuakes(parseFloat(geo.data[0].lat), parseFloat(geo.data[0].lon), radius);
@@ -155,7 +222,7 @@ export default function App() {
 
   function nearMe() {
     if (!navigator.geolocation) {
-      setError("Brauzeriniz geolokasiyanı dəstəkləmir.");
+      setError(t.noGeo);
       return;
     }
     setLoading(true);
@@ -164,7 +231,7 @@ export default function App() {
       (pos) => run(() => fetchQuakes(pos.coords.latitude, pos.coords.longitude, radius)),
       () => {
         setLoading(false);
-        setError("Mövqe icazəsi verilmədi. Ərazi adı ilə axtarın.");
+        setError(t.geoDenied);
       },
       { timeout: 10000 }
     );
@@ -182,6 +249,10 @@ export default function App() {
     // Dövr və minimum magnitude məlumatı dəyişir -> yenidən yüklə
     if (point && ("days" in patch || "minMag" in patch)) run(() => fetchQuakes(point.lat, point.lon, radius, next));
   }
+
+  useEffect(() => {
+    document.documentElement.lang = opts.lang;
+  }, [opts.lang]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -214,17 +285,17 @@ export default function App() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && search()}
-            placeholder="Ərazi adı, məs. Baku"
-            aria-label="Ərazi adı"
+            placeholder={t.placeholder}
+            aria-label={t.placeLabel}
           />
           <button onClick={search} disabled={loading}>
-            {loading ? "Axtarılır..." : "Search"}
+            {loading ? t.searching : t.search}
           </button>
-          <button className="near" onClick={nearMe} disabled={loading} title="Mövqeyimə yaxın zəlzələlər">
-            📍 Near me
+          <button className="near" onClick={nearMe} disabled={loading} title={t.nearMeTitle}>
+            {t.nearMe}
           </button>
         </div>
-        <div className="radii" role="group" aria-label="Radius (km)">
+        <div className="radii" role="group" aria-label={t.radiusLabel}>
           {RADII.map((r) => (
             <button key={r} className={r === radius ? "active" : ""} onClick={() => changeRadius(r)} disabled={loading}>
               {r} km
@@ -232,11 +303,11 @@ export default function App() {
           ))}
         </div>
         <button className="menubtn" onClick={() => setMenuOpen(true)} aria-haspopup="dialog" aria-expanded={menuOpen}>
-          ☰ Menu
+          {t.menuBtn}
         </button>
       </header>
 
-      {waking && <p className="notice">Server oyanır, bu 30–60 saniyə çəkə bilər…</p>}
+      {waking && <p className="notice">{t.waking}</p>}
       {error && <p className="error">{error}</p>}
 
       <main className="content">
@@ -248,7 +319,7 @@ export default function App() {
             <>
               {opts.circle && <Circle center={center} radius={radius * 1000} pathOptions={{ color: "#1d6fd8", weight: 1, fillOpacity: 0.05 }} />}
               <CircleMarker center={center} radius={6} pathOptions={{ color: "#1d6fd8", fillColor: "#1d6fd8", fillOpacity: 1 }}>
-                <Popup>Seçilmiş nöqtə</Popup>
+                <Popup>{t.selectedPoint}</Popup>
               </CircleMarker>
             </>
           )}
@@ -274,10 +345,10 @@ export default function App() {
                 </a>
                 <table className="popup">
                   <tbody>
-                    <tr><th>Vaxt</th><td>{fmtDate(q.time)}</td></tr>
-                    <tr><th>Koordinat</th><td>{fmtCoord(q.latitude, q.longitude)}</td></tr>
-                    <tr><th>Dərinlik</th><td>{fmtDepth(q.depth)} km</td></tr>
-                    <tr><th>Məsafə</th><td>{q.distance_km} km</td></tr>
+                    <tr><th>{t.time}</th><td>{fmtDate(q.time, opts.lang)}</td></tr>
+                    <tr><th>{t.coords}</th><td>{fmtCoord(q.latitude, q.longitude)}</td></tr>
+                    <tr><th>{t.depth}</th><td>{fmtDepth(q.depth)} km</td></tr>
+                    <tr><th>{t.distance}</th><td>{q.distance_km} km</td></tr>
                   </tbody>
                 </table>
               </Popup>
@@ -287,34 +358,34 @@ export default function App() {
 
         <aside className="list">
           <h2>
-            Yaxın zəlzələlər ({visible.length}
+            {t.listTitle} ({visible.length}
             {visible.length !== quakes.length ? ` / ${quakes.length}` : ""})
           </h2>
           <div className="listtools">
             <label>
-              Sıralama
+              {t.sortLabel}
               <select value={sort} onChange={(e) => setSort(e.target.value)}>
                 {Object.entries(SORTS).map(([k, v]) => (
-                  <option key={k} value={k}>{v.label}</option>
+                  <option key={k} value={k}>{t.sorts[k]}</option>
                 ))}
               </select>
             </label>
             <label className="check">
               <input type="checkbox" checked={onlyOnMap} onChange={(e) => setOnlyOnMap(e.target.checked)} />
-              Yalnız xəritədə görünənlər
+              {t.onlyOnMap}
             </label>
           </div>
           {opts.legend && (<>
-          <div className="legend" aria-label="Rəng dərinliyi göstərir">
-            <b>Rəng = dərinlik (km):</b>
+          <div className="legend" aria-label={t.legendDepthAria}>
+            <b>{t.legendDepth}</b>
             {DEPTHS.map((l) => (
               <span key={l.label}>
                 <i style={{ background: l.color }} /> {l.label}
               </span>
             ))}
           </div>
-          <div className="legend" aria-label="Ölçü magnitude göstərir">
-            <b>Ölçü = magnitude:</b>
+          <div className="legend" aria-label={t.legendSizeAria}>
+            <b>{t.legendSize}</b>
             {SIZE_SAMPLES.map((m) => (
               <span key={m}>
                 <i className="sz" style={{ width: 2 * markerSize(m), height: 2 * markerSize(m) }} /> M{m}
@@ -322,9 +393,9 @@ export default function App() {
             ))}
           </div>
           </>)}
-          {!searched && <p className="hint">Ərazi adı yazıb Search düyməsinə basın və ya “Near me” seçin.</p>}
-          {searched && quakes.length === 0 && <p className="hint">Bu ərazidə {radius} km radiusda zəlzələ tapılmadı.</p>}
-          {searched && quakes.length > 0 && visible.length === 0 && <p className="hint">Xəritənin görünən hissəsində zəlzələ yoxdur.</p>}
+          {!searched && <p className="hint">{t.hintStart}</p>}
+          {searched && quakes.length === 0 && <p className="hint">{t.noResults(radius)}</p>}
+          {searched && quakes.length > 0 && visible.length === 0 && <p className="hint">{t.noneVisible}</p>}
           <ul>
             {visible.map((q) => (
               <li key={q.id} className={q.id === selectedId ? "sel" : ""}>
@@ -336,10 +407,10 @@ export default function App() {
                   <div>
                     <div className="place">{q.place}</div>
                     <div className="meta">
-                      {ago(q.time)} · {fmtDate(q.time)}
+                      {ago(q.time, t)} · {fmtDate(q.time, opts.lang)}
                     </div>
                     <div className="meta">
-                      Depth: {fmtDepth(q.depth)} km · {q.distance_km} km uzaqda
+                      {t.depth}: {fmtDepth(q.depth)} km · {q.distance_km} km {t.away}
                     </div>
                   </div>
                 </button>
@@ -350,61 +421,68 @@ export default function App() {
       </main>
       {menuOpen && (
         <div className="overlay" onClick={() => setMenuOpen(false)}>
-          <aside className="drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
+          <aside className="drawer" role="dialog" aria-modal="true" aria-label={t.menu} onClick={(e) => e.stopPropagation()}>
             <div className="drawerhead">
-              <h2>Menu</h2>
-              <button onClick={() => setMenuOpen(false)} aria-label="Bağla" autoFocus>✕</button>
+              <h2>{t.menu}</h2>
+              <button onClick={() => setMenuOpen(false)} aria-label={t.close} autoFocus>✕</button>
             </div>
 
-            <h3>Options</h3>
+            <h3>{t.options}</h3>
             <label className="opt">
-              Zaman dövrü
-              <select value={opts.days} onChange={(e) => changeOpt({ days: Number(e.target.value) })}>
-                {DAYS.map((d) => <option key={d.v} value={d.v}>{d.l}</option>)}
+              {t.language}
+              <select value={opts.lang} onChange={(e) => changeOpt({ lang: e.target.value })}>
+                <option value="az">{T.az.langName}</option>
+                <option value="en">{T.en.langName}</option>
               </select>
             </label>
             <label className="opt">
-              Minimum magnitude
+              {t.period}
+              <select value={opts.days} onChange={(e) => changeOpt({ days: Number(e.target.value) })}>
+                {DAYS.map((d) => <option key={d} value={d}>{t.days[d]}</option>)}
+              </select>
+            </label>
+            <label className="opt">
+              {t.minMag}
               <select value={opts.minMag} onChange={(e) => changeOpt({ minMag: Number(e.target.value) })}>
                 {MAGS.map((m) => <option key={m} value={m}>{m}+</option>)}
               </select>
             </label>
             <label className="opt">
-              Xəritə növü
+              {t.mapType}
               <select value={opts.base} onChange={(e) => changeOpt({ base: e.target.value })}>
-                {Object.entries(BASES).map(([k, b]) => <option key={k} value={k}>{b.label}</option>)}
+                {Object.keys(BASES).map((k) => <option key={k} value={k}>{t.bases[k]}</option>)}
               </select>
             </label>
             <label className="opt check">
               <input type="checkbox" checked={opts.circle} onChange={(e) => changeOpt({ circle: e.target.checked })} />
-              Radius dairəsini göstər
+              {t.showCircle}
             </label>
             <label className="opt check">
               <input type="checkbox" checked={opts.legend} onChange={(e) => changeOpt({ legend: e.target.checked })} />
-              Rəng və ölçü izahını göstər
+              {t.showLegend}
             </label>
-            <button className="reset" onClick={() => changeOpt(DEFAULT_OPTS)}>Defolt ayarlara qayıt</button>
+            <button className="reset" onClick={() => changeOpt({ ...DEFAULT_OPTS, lang: opts.lang })}>{t.reset}</button>
 
-            <h3>About</h3>
+            <h3>{t.about}</h3>
             <p className="aboutp">
-              GeoQuake zəlzələ məlumatlarını göstərir; zəlzələnin nə vaxt baş verəcəyini proqnozlaşdırmır.
+              {t.aboutText}
             </p>
             <ul className="aboutl">
-              <li>Zəlzələ məlumatı: <a href="https://earthquake.usgs.gov/" target="_blank" rel="noreferrer">USGS</a></li>
-              <li>Xəritə: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></li>
-              <li>Ərazi axtarışı: Nominatim</li>
+              <li>{t.srcQuakes}: <a href="https://earthquake.usgs.gov/" target="_blank" rel="noreferrer">USGS</a></li>
+              <li>{t.srcMap}: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></li>
+              <li>{t.srcSearch}: Nominatim</li>
               <li><a href="https://github.com/mickael044/GeoQuake" target="_blank" rel="noreferrer">GitHub</a></li>
             </ul>
 
-            <h3>Developerlə əlaqə</h3>
-            <p className="aboutp">Sual, təklif və ya xəta barədə yaza bilərsiniz.</p>
+            <h3>{t.contact}</h3>
+            <p className="aboutp">{t.contactText}</p>
             <ul className="aboutl">
-              <li>Developer: Mikayil Hasanov</li>
+              <li>{t.developer}: Mikayil Hasanov</li>
               <li>
-                E-poçt: <a href={`mailto:${CONTACT_EMAIL}?subject=GeoQuake`}>{CONTACT_EMAIL}</a>
+                {t.email}: <a href={`mailto:${CONTACT_EMAIL}?subject=GeoQuake`}>{CONTACT_EMAIL}</a>
               </li>
               <li>
-                LinkedIn: <a href={LINKEDIN_URL} target="_blank" rel="noreferrer">Mikayil Hasanov</a>
+                {t.linkedin}: <a href={LINKEDIN_URL} target="_blank" rel="noreferrer">Mikayil Hasanov</a>
               </li>
             </ul>
           </aside>
