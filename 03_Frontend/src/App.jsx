@@ -20,6 +20,7 @@ const depthColor = (d) => (DEPTHS.find((x) => (d ?? 0) < x.max) || DEPTHS[DEPTHS
 const markerSize = (m) => Math.max(4, Math.pow(m || 0, 1.6)); // M3≈6, M5≈13, M7≈22
 const SIZE_SAMPLES = [3, 5, 7];
 const fmtDate = (iso) => new Date(iso).toLocaleString("az-AZ");
+const fmtDepth = (d) => (d == null ? "?" : Number(d).toFixed(1).replace(/\.0$/, ""));
 const usgsLink = (id) => `https://earthquake.usgs.gov/earthquakes/eventpage/${id}`;
 const fmtCoord = (lat, lon) => `${Math.abs(lat).toFixed(3)}°${lat >= 0 ? "N" : "S"} ${Math.abs(lon).toFixed(3)}°${lon >= 0 ? "E" : "W"}`;
 function ago(iso) {
@@ -34,11 +35,12 @@ const SORTS = {
   dist: { label: "Ən yaxın", fn: (a, b) => (a.distance_km ?? 0) - (b.distance_km ?? 0) },
 };
 
-function Recenter({ center, zoom }) {
+function Recenter({ lat, lon, zoom, focusKey }) {
   const map = useMap();
+  // Yalnız yeni axtarış və ya radius dəyişəndə işləyir; istifadəçinin sürüşdürməsi/zoom-u bunu tetikləmir
   useEffect(() => {
-    map.setView(center, zoom);
-  }, [center, zoom, map]);
+    map.setView([lat, lon], zoom);
+  }, [lat, lon, zoom, focusKey, map]);
   return null;
 }
 
@@ -61,6 +63,7 @@ export default function App() {
   const [onlyOnMap, setOnlyOnMap] = useState(false);
   const [bounds, setBounds] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
+  const [focusKey, setFocusKey] = useState(0);
   const [map, setMap] = useState(null);
   const markers = useRef({});
 
@@ -99,6 +102,7 @@ export default function App() {
     setPoint({ lat, lon });
     setQuakes(res.data);
     setSelectedId(null);
+    setFocusKey((k) => k + 1);
     setSearched(true);
   }
 
@@ -193,7 +197,7 @@ export default function App() {
       <main className="content">
         <MapContainer center={center} zoom={ZOOM[radius]} className="map" ref={setMap}>
           <BoundsTracker onBounds={setBounds} />
-          <Recenter center={center} zoom={ZOOM[radius]} />
+          <Recenter lat={center[0]} lon={center[1]} zoom={ZOOM[radius]} focusKey={focusKey} />
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
           {point && (
             <>
@@ -227,7 +231,7 @@ export default function App() {
                   <tbody>
                     <tr><th>Vaxt</th><td>{fmtDate(q.time)}</td></tr>
                     <tr><th>Koordinat</th><td>{fmtCoord(q.latitude, q.longitude)}</td></tr>
-                    <tr><th>Dərinlik</th><td>{q.depth} km</td></tr>
+                    <tr><th>Dərinlik</th><td>{fmtDepth(q.depth)} km</td></tr>
                     <tr><th>Məsafə</th><td>{q.distance_km} km</td></tr>
                   </tbody>
                 </table>
@@ -288,7 +292,7 @@ export default function App() {
                       {ago(q.time)} · {fmtDate(q.time)}
                     </div>
                     <div className="meta">
-                      Depth: {q.depth} km · {q.distance_km} km uzaqda
+                      Depth: {fmtDepth(q.depth)} km · {q.distance_km} km uzaqda
                     </div>
                   </div>
                 </button>
