@@ -5,6 +5,28 @@ import { MapContainer, TileLayer, CircleMarker, Circle, Popup, useMap, useMapEve
 const API = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 const RADII = [10, 25, 50, 100, 250];
 const ZOOM = { 10: 11, 25: 10, 50: 9, 100: 8, 250: 7 };
+const DEFAULT_OPTS = { days: 365, minMag: 2.5, base: "osm", circle: true, legend: true };
+const DAYS = [{ v: 1, l: "Son 24 saat" }, { v: 7, l: "Son 7 gün" }, { v: 30, l: "Son 30 gün" }, { v: 365, l: "Son 1 il" }];
+const MAGS = [2.5, 3, 4, 5, 6];
+const BASES = {
+  osm: { label: "Küçə xəritəsi (OpenStreetMap)", url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", attr: "&copy; OpenStreetMap contributors", maxZoom: 19 },
+  topo: { label: "Relyef (OpenTopoMap)", url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", attr: "&copy; OpenStreetMap contributors, SRTM | &copy; OpenTopoMap (CC-BY-SA)", maxZoom: 17 },
+  sat: { label: "Peyk (Esri)", url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attr: "Tiles &copy; Esri", maxZoom: 18 },
+};
+function loadOpts() {
+  try {
+    return { ...DEFAULT_OPTS, ...JSON.parse(localStorage.getItem("geoquake.opts") || "{}") };
+  } catch {
+    return DEFAULT_OPTS;
+  }
+}
+function saveOpts(o) {
+  try {
+    localStorage.setItem("geoquake.opts", JSON.stringify(o));
+  } catch {
+    /* brauzer saxlamağa icazə vermir — vacib deyil */
+  }
+}
 const BAKU = [40.4093, 49.8671];
 const TIMEOUT = 90000; // Render pulsuz planında oyanma 30-60 san çəkə bilər
 
@@ -64,6 +86,8 @@ export default function App() {
   const [bounds, setBounds] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [focusKey, setFocusKey] = useState(0);
+  const [opts, setOpts] = useState(loadOpts);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [map, setMap] = useState(null);
   const markers = useRef({});
 
@@ -94,9 +118,9 @@ export default function App() {
     }
   }
 
-  async function fetchQuakes(lat, lon, r) {
+  async function fetchQuakes(lat, lon, r, o = opts) {
     const res = await axios.get(`${API}/earthquakes/nearby`, {
-      params: { lat, lon, radius_km: r },
+      params: { lat, lon, radius_km: r, days: o.days, min_magnitude: o.minMag },
       timeout: TIMEOUT,
     });
     setPoint({ lat, lon });
@@ -148,6 +172,21 @@ export default function App() {
     if (point) run(() => fetchQuakes(point.lat, point.lon, r));
   }
 
+  function changeOpt(patch) {
+    const next = { ...opts, ...patch };
+    setOpts(next);
+    saveOpts(next);
+    // Dövr və minimum magnitude məlumatı dəyişir -> yenidən yüklə
+    if (point && ("days" in patch || "minMag" in patch)) run(() => fetchQuakes(point.lat, point.lon, radius, next));
+  }
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e) => e.key === "Escape" && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
   const visible = useMemo(() => {
     const list = onlyOnMap && bounds ? quakes.filter((q) => bounds.contains([q.latitude, q.longitude])) : quakes;
     return [...list].sort(SORTS[sort].fn);
@@ -189,6 +228,9 @@ export default function App() {
             </button>
           ))}
         </div>
+        <button className="menubtn" onClick={() => setMenuOpen(true)} aria-haspopup="dialog" aria-expanded={menuOpen}>
+          ☰ Menu
+        </button>
       </header>
 
       {waking && <p className="notice">Server oyanır, bu 30–60 saniyə çəkə bilər…</p>}
@@ -198,10 +240,10 @@ export default function App() {
         <MapContainer center={center} zoom={ZOOM[radius]} className="map" ref={setMap}>
           <BoundsTracker onBounds={setBounds} />
           <Recenter lat={center[0]} lon={center[1]} zoom={ZOOM[radius]} focusKey={focusKey} />
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+          <TileLayer key={opts.base} url={BASES[opts.base].url} attribution={BASES[opts.base].attr} maxZoom={BASES[opts.base].maxZoom} />
           {point && (
             <>
-              <Circle center={center} radius={radius * 1000} pathOptions={{ color: "#1d6fd8", weight: 1, fillOpacity: 0.05 }} />
+              {opts.circle && <Circle center={center} radius={radius * 1000} pathOptions={{ color: "#1d6fd8", weight: 1, fillOpacity: 0.05 }} />}
               <CircleMarker center={center} radius={6} pathOptions={{ color: "#1d6fd8", fillColor: "#1d6fd8", fillOpacity: 1 }}>
                 <Popup>Seçilmiş nöqtə</Popup>
               </CircleMarker>
@@ -259,6 +301,7 @@ export default function App() {
               Yalnız xəritədə görünənlər
             </label>
           </div>
+          {opts.legend && (<>
           <div className="legend" aria-label="Rəng dərinliyi göstərir">
             <b>Rəng = dərinlik (km):</b>
             {DEPTHS.map((l) => (
@@ -275,6 +318,7 @@ export default function App() {
               </span>
             ))}
           </div>
+          </>)}
           {!searched && <p className="hint">Ərazi adı yazıb Search düyməsinə basın və ya “Near me” seçin.</p>}
           {searched && quakes.length === 0 && <p className="hint">Bu ərazidə {radius} km radiusda zəlzələ tapılmadı.</p>}
           {searched && quakes.length > 0 && visible.length === 0 && <p className="hint">Xəritənin görünən hissəsində zəlzələ yoxdur.</p>}
@@ -301,6 +345,56 @@ export default function App() {
           </ul>
         </aside>
       </main>
+      {menuOpen && (
+        <div className="overlay" onClick={() => setMenuOpen(false)}>
+          <aside className="drawer" role="dialog" aria-modal="true" aria-label="Menu" onClick={(e) => e.stopPropagation()}>
+            <div className="drawerhead">
+              <h2>Menu</h2>
+              <button onClick={() => setMenuOpen(false)} aria-label="Bağla" autoFocus>✕</button>
+            </div>
+
+            <h3>Options</h3>
+            <label className="opt">
+              Zaman dövrü
+              <select value={opts.days} onChange={(e) => changeOpt({ days: Number(e.target.value) })}>
+                {DAYS.map((d) => <option key={d.v} value={d.v}>{d.l}</option>)}
+              </select>
+            </label>
+            <label className="opt">
+              Minimum magnitude
+              <select value={opts.minMag} onChange={(e) => changeOpt({ minMag: Number(e.target.value) })}>
+                {MAGS.map((m) => <option key={m} value={m}>{m}+</option>)}
+              </select>
+            </label>
+            <label className="opt">
+              Xəritə növü
+              <select value={opts.base} onChange={(e) => changeOpt({ base: e.target.value })}>
+                {Object.entries(BASES).map(([k, b]) => <option key={k} value={k}>{b.label}</option>)}
+              </select>
+            </label>
+            <label className="opt check">
+              <input type="checkbox" checked={opts.circle} onChange={(e) => changeOpt({ circle: e.target.checked })} />
+              Radius dairəsini göstər
+            </label>
+            <label className="opt check">
+              <input type="checkbox" checked={opts.legend} onChange={(e) => changeOpt({ legend: e.target.checked })} />
+              Rəng və ölçü izahını göstər
+            </label>
+            <button className="reset" onClick={() => changeOpt(DEFAULT_OPTS)}>Defolt ayarlara qayıt</button>
+
+            <h3>About</h3>
+            <p className="aboutp">
+              GeoQuake zəlzələ məlumatlarını göstərir; zəlzələnin nə vaxt baş verəcəyini proqnozlaşdırmır.
+            </p>
+            <ul className="aboutl">
+              <li>Zəlzələ məlumatı: <a href="https://earthquake.usgs.gov/" target="_blank" rel="noreferrer">USGS</a></li>
+              <li>Xəritə: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a></li>
+              <li>Ərazi axtarışı: Nominatim</li>
+              <li><a href="https://github.com/mickael044/GeoQuake" target="_blank" rel="noreferrer">GitHub</a></li>
+            </ul>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }
