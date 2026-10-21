@@ -1,308 +1,190 @@
 # 🌍 GeoQuake
 
-**GeoQuake** is a full-stack web application that fetches real-time earthquake data from the USGS (United States Geological Survey) API, stores it in a database, filters it by distance from a location chosen by the user, and displays it on an interactive map.
+![version](https://img.shields.io/badge/version-1.4.0-1d6fd8) ![python](https://img.shields.io/badge/python-3.10%2B-blue) ![license](https://img.shields.io/badge/data-USGS-green)
 
-🔗 **Live demo:** https://geoquake-web.onrender.com/
+**GeoQuake** is a full-stack web app that shows recent earthquakes around any place in the world. It pulls data from the USGS Earthquake API, stores it in PostgreSQL, filters it by distance from the location you choose, and draws it on an interactive map and a sortable list.
 
-> ℹ️ If the demo runs on Render's free plan, the first load after a period of inactivity may take 30–60 seconds.
+🔗 **Live demo:** https://geoquake-web.onrender.com/ · 📘 **API docs (Swagger):** https://geoquake.onrender.com/docs
+
+> ℹ️ The demo runs on Render's free plan. After a period of inactivity the first load can take 30–60 seconds; the app shows a notice while the server wakes up.
+
+The interface is available in **Azərbaycanca** and **English** (☰ Menu → Options → Language).
 
 ---
 
 ## ✨ Features
 
-- Choose an area (search or map) and see nearby earthquakes
-- Filtering by distance from the user's location
-- For each earthquake: **magnitude**, **depth**, **time**, **place**, **distance**
-- Interactive map with earthquake markers (OpenStreetMap + Leaflet)
-- Earthquake data fetched from USGS and stored in PostgreSQL
-
----
-
-## 🧰 Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Backend | Python 3.10+, FastAPI, SQLAlchemy ORM, Pydantic, Uvicorn |
-| Database | PostgreSQL ([Neon](https://neon.tech) in the cloud; local PostgreSQL for development), `psycopg[binary]` |
-| Frontend | React (Vite), Leaflet / OpenStreetMap, Axios, CSS3 |
-| External API | [USGS Earthquake Hazards Program API](https://earthquake.usgs.gov/fdsnws/event/1/) |
-| Deployment | Render |
-
----
-
-## 📁 Project Structure
-
-```
-GeoQuake/
-├── 00_Requirements/   # Requirements and analysis documents
-├── 02_Backend/        # FastAPI backend (entry point: app/main.py)
-├── 03_Frontend/       # React (Vite) frontend
-├── 04_QA/             # Test scenarios
-├── .gitignore
-└── README.md
-```
-
----
-
-## 🚀 Running Locally
-
-### Prerequisites
-
-- Python 3.10+
-- Node.js 18+ and npm
-- PostgreSQL (or SQLite for a quick test)
-- Git
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/mickael044/GeoQuake.git
-cd GeoQuake
-```
-
-### 2. Database
-
-Make sure the PostgreSQL service is running (Linux):
-
-```bash
-sudo systemctl start postgresql
-```
-
-Then create a database for GeoQuake and set the backend's connection settings (for example, `DATABASE_URL`) for your environment.
-
-### 3. Backend (Terminal 1)
-
-```bash
-cd 02_Backend
-python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python -m uvicorn app.main:app --reload
-```
-
-The backend runs at `http://127.0.0.1:8000`. FastAPI's automatic API documentation is available at `http://127.0.0.1:8000/docs`.
-
-### 4. Frontend (Terminal 2)
-
-```bash
-cd 03_Frontend
-npm install
-npm run dev
-```
-
-The Vite dev server opens at the address printed in the terminal (usually `http://localhost:5173`).
+- 🔎 Search any place (OpenStreetMap Nominatim) or use **📍 Near me**
+- 📏 Radius selector: 10 / 25 / 50 / 100 / 250 km, shown as a circle on the map
+- 🗺 Interactive map (Leaflet): **marker size = magnitude, marker color = depth** (darker = deeper)
+- 📋 Earthquake list with sorting (newest / strongest / nearest), an "only visible on the map" filter, and click-to-focus
+- ℹ️ Popup with time, coordinates, depth, distance and a link to the official USGS event page
+- ☰ Menu with options: time period (24 h – 1 year), minimum magnitude, map type (street / terrain / satellite), radius-circle and legend toggles — saved in your browser
+- 🌐 Azerbaijani / English interface
+- 🔢 Version number shown in the menu, [changelog](03_Frontend/src/CHANGELOG.md)
+- ⏳ Cold-start notice for the free-tier server and a lightweight `/health` endpoint
 
 ---
 
 ## 🏛 Architecture
 
 ```
-User → Frontend (React, Render Static Site)
-            │  HTTP requests
+User → Frontend (React + Leaflet, Render Static Site)
+            │  HTTPS / JSON
             ▼
-       FastAPI Backend (Render Web Service)
-            │  SQLAlchemy
-            ▼
-       PostgreSQL (Neon)        USGS API (earthquake data)
+       FastAPI backend (Render Web Service)
+            │  SQLAlchemy                  │  httpx
+            ▼                              ▼
+       PostgreSQL (Neon)             USGS Earthquake API
 ```
 
-- **Frontend** — the part users see and interact with, including the map.
-- **FastAPI backend** — receives requests from the frontend, processes earthquake data and returns it.
-- **Neon PostgreSQL** — cloud database where the data is stored.
-- **Swagger** — used to explore and test API endpoints in the browser.
+The backend asks USGS for the requested area, stores new events in PostgreSQL (so the database works as a cache), then returns the events within the radius with their distance from the chosen point (haversine formula).
 
-## ☁️ Deployment & Live Links
+## 🧰 Tech stack
 
-| Part | URL |
+| Layer | Technology |
 |---|---|
-| Web app | https://geoquake-web.onrender.com/ |
-| Backend API | https://geoquake.onrender.com |
-| API docs (Swagger) | https://geoquake.onrender.com/docs |
-| Source code | https://github.com/mickael044/GeoQuake |
-
-Example request (earthquakes near Baku):
-
-```
-GET https://geoquake.onrender.com/earthquakes/nearby?lat=40.41&lon=49.87
-```
-
-Keep the database connection (the Neon `DATABASE_URL`) in Render's **Environment Variables** and never commit it to GitHub. Point the frontend to the backend's public URL (`https://geoquake.onrender.com`).
+| Backend | Python, FastAPI, SQLAlchemy, Pydantic, httpx, Uvicorn |
+| Database | PostgreSQL ([Neon](https://neon.tech) in the cloud), `psycopg[binary]` |
+| Frontend | React 18, Vite, react-leaflet / Leaflet, Axios |
+| Data | [USGS Earthquake Catalog API](https://earthquake.usgs.gov/fdsnws/event/1/) |
+| Maps & search | OpenStreetMap, OpenTopoMap, Esri World Imagery, Nominatim |
+| Hosting | Render (frontend + backend), Neon (database) |
 
 ---
 
-## 🧪 Testing
+## 📡 API
 
-Test scenarios are in the `04_QA/` folder.
+Interactive documentation: `/docs` (Swagger UI).
 
----
-
-## 🗺 Roadmap
-
-- Seismic risk assessment (LOW / MEDIUM / HIGH), based only on statistical analysis of historical data
-- User accounts and saving favorite locations
-- One-command startup with Docker (`docker-compose up --build`)
-
----
-
-## ⚠️ Disclaimer
-
-GeoQuake **does not predict when an earthquake will occur**. The data shown comes from USGS open data and must not be used as a substitute for official safety guidance.
-
-## 📄 Data Source
-
-Earthquake data: [USGS Earthquake Hazards Program](https://earthquake.usgs.gov/).
-
-
-# 🌍 GeoQuake
-
-**GeoQuake** — USGS (United States Geological Survey) API-dən real vaxt zəlzələ məlumatlarını çəkən, verilənlər bazasında saxlayan, istifadəçinin seçdiyi ərazidən məsafəyə görə filtrləyən və interaktiv xəritədə göstərən full-stack veb tətbiqdir.
-
-🔗 **Canlı demo:** https://geoquake-web.onrender.com/
-
-> ℹ️ Demo pulsuz Render planında işləyirsə, uzun müddət istifadə olunmadıqdan sonra ilk açılış 30–60 saniyə çəkə bilər.
-
----
-
-## ✨ Funksiyalar
-
-- Ərazi seçmək (axtarış və ya xəritə) və həmin əraziyə yaxın zəlzələləri görmək
-- Məsafəyə görə filtrləmə (istifadəçinin nöqtəsindən uzaqlıq)
-- Hər zəlzələ üçün: **magnitude**, **dərinlik**, **vaxt**, **yer**, **məsafə**
-- OpenStreetMap + Leaflet üzərində interaktiv xəritə və zəlzələ markerləri
-- USGS-dən alınan məlumatların PostgreSQL-də saxlanması
-
----
-
-## 🧰 Texnologiyalar
-
-| Qat | Texnologiya |
+| Endpoint | Description |
 |---|---|
-| Backend | Python 3.10+, FastAPI, SQLAlchemy ORM, Pydantic, Uvicorn |
-| Database | PostgreSQL ([Neon](https://neon.tech) bulud bazası; lokal üçün PostgreSQL), `psycopg[binary]` |
-| Frontend | React (Vite), Leaflet / OpenStreetMap, Axios, CSS3 |
-| Xarici API | [USGS Earthquake Hazards Program API](https://earthquake.usgs.gov/fdsnws/event/1/) |
-| Deploy | Render |
+| `GET /health` | Lightweight health check (no database access) |
+| `GET /earthquakes?limit=100` | Stored earthquakes, newest first (`limit` 1–1000) |
+| `GET /earthquakes/nearby` | Earthquakes around a point, with `distance_km` |
+
+`/earthquakes/nearby` parameters:
+
+| Parameter | Default | Allowed |
+|---|---|---|
+| `lat` | required | −90 … 90 |
+| `lon` | required | −180 … 180 |
+| `radius_km` | 300 | > 0 … 2000 |
+| `days` | 365 | 1 … 3650 |
+| `min_magnitude` | 2.5 | 0 … 10 |
+
+Example:
+
+```bash
+curl "https://geoquake.onrender.com/earthquakes/nearby?lat=40.41&lon=49.87&radius_km=100&days=30"
+```
+
+```json
+[
+  {
+    "id": "us7000xxxx",
+    "magnitude": 4.6,
+    "depth": 10.0,
+    "latitude": 40.12,
+    "longitude": 49.35,
+    "place": "45 km SW of Baku, Azerbaijan",
+    "time": "2026-10-10T08:15:00Z",
+    "distance_km": 52.3
+  }
+]
+```
+Invalid input returns `422`; if USGS is unreachable the API returns `502`, and `503` if the database is unavailable.
 
 ---
 
-## 📁 Layihə strukturu
+## 📁 Project structure
 
 ```
 GeoQuake/
-├── 00_Requirements/   # Tələblər və analiz sənədləri
-├── 02_Backend/        # FastAPI backend (app/main.py giriş nöqtəsidir)
-├── 03_Frontend/       # React (Vite) frontend
-├── 04_QA/             # Test ssenariləri
-├── .gitignore
+├── 00_Requirements/      # requirements and analysis
+├── 02_Backend/           # FastAPI backend
+│   ├── app/              # main.py, models.py, schemas.py, usgs.py, database.py
+│   ├── requirements.txt
+│   └── .env.example      # DATABASE_URL example
+├── 03_Frontend/          # React + Vite frontend
+│   ├── src/              # App.jsx, App.css, main.jsx, CHANGELOG.md
+│   └── package.json
+├── 04_QA/                # test scenarios
 └── README.md
 ```
 
 ---
 
-## 🚀 Lokal işə salma
+## 🚀 Run locally
 
-### Tələblər
-
-- Python 3.10+
-- Node.js 18+ və npm
-- PostgreSQL (və ya SQLite ilə sürətli test)
-- Git
-
-### 1. Repository-ni klonlayın
+**Requirements:** Python 3.10+, Node.js 18+, PostgreSQL, Git.
 
 ```bash
 git clone https://github.com/mickael044/GeoQuake.git
 cd GeoQuake
 ```
 
-### 2. Verilənlər bazası
+**1. Database** — create a PostgreSQL database (for example `geoquake`). Tables are created automatically when the backend starts.
 
-PostgreSQL servisinin işlədiyinə əmin olun (Linux):
-
-```bash
-sudo systemctl start postgresql
-```
-
-Sonra GeoQuake üçün baza yaradın və backend-in bağlantı parametrlərini (məsələn, `DATABASE_URL`) öz mühitinizə uyğun təyin edin.
-
-### 3. Backend (Terminal 1)
+**2. Backend**
 
 ```bash
 cd 02_Backend
+cp .env.example .env          # then set DATABASE_URL for your database
 python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
+Backend: http://127.0.0.1:8000 · Docs: http://127.0.0.1:8000/docs
 
-Backend `http://127.0.0.1:8000` ünvanında işləyəcək. FastAPI-nin avtomatik API sənədləşməsi `http://127.0.0.1:8000/docs` ünvanındadır.
-
-### 4. Frontend (Terminal 2)
+**3. Frontend** (new terminal)
 
 ```bash
 cd 03_Frontend
 npm install
 npm run dev
 ```
+Open the address Vite prints (usually http://localhost:5173). By default the frontend calls the backend on port 8000 of the same host; set `VITE_API_URL` to use another backend.
 
-Vite dev serveri terminalda göstərilən ünvanda (adətən `http://localhost:5173`) açılacaq.
-
----
-
-## 🏛 Arxitektura
-
-```
-İstifadəçi → Frontend (React, Render Static Site)
-                 │  HTTP sorğuları
-                 ▼
-            FastAPI Backend (Render Web Service)
-                 │  SQLAlchemy
-                 ▼
-            PostgreSQL (Neon)        USGS API (zəlzələ məlumatları)
-```
-
-- **Frontend** — istifadəçinin gördüyü və xəritə ilə işlədiyi hissə.
-- **FastAPI backend** — frontend-dən gələn sorğuları qəbul edir, zəlzələ məlumatlarını emal edir və qaytarır.
-- **Neon PostgreSQL** — məlumatların saxlandığı bulud bazası.
-- **Swagger** — API endpointlərini brauzerdə yoxlamaq və test etmək üçün.
-
-## ☁️ Deploy və canlı linklər
-
-| Hissə | Ünvan |
-|---|---|
-| Web tətbiq | https://geoquake-web.onrender.com/ |
-| Backend API | https://geoquake.onrender.com |
-| API sənədləşməsi (Swagger) | https://geoquake.onrender.com/docs |
-| Mənbə kodu | https://github.com/mickael044/GeoQuake |
-
-Nümunə sorğu (Bakı ətrafındakı zəlzələlər):
-
-```
-GET https://geoquake.onrender.com/earthquakes/nearby?lat=40.41&lon=49.87
-```
-
-Backend üçün baza bağlantısını (Neon-un `DATABASE_URL` dəyərini) Render-in **Environment Variables** bölməsində saxlayın. Onu heç vaxt GitHub-a yükləməyin. Frontend üçün backend-in ictimai URL-ni (`https://geoquake.onrender.com`) göstərin.
+> Never commit your `.env` file. It is listed in `.gitignore`.
 
 ---
 
-## 🧪 Test
+## ☁️ Deployment
 
-Test ssenariləri `04_QA/` qovluğundadır.
-
----
-
-## 🗺 Gələcək planlar
-
-- Seysmik risk qiymətləndirməsi (LOW / MEDIUM / HIGH) — yalnız tarixi məlumatlara əsaslanan statistik təhlil kimi
-- İstifadəçi hesabları və seçilmiş əraziləri yadda saxlamaq
-- Docker ilə bir əmrlə işə salma (`docker-compose up --build`)
+| Part | Where | Notes |
+|---|---|---|
+| Frontend | Render Static Site | Set `VITE_API_URL=https://geoquake.onrender.com` **before the build** |
+| Backend | Render Web Service | Set the `DATABASE_URL` environment variable (Neon connection string) |
+| Database | Neon PostgreSQL | Keep the connection string only in Render's environment variables |
 
 ---
 
-## ⚠️ Qeyd
+## 🧪 Testing
 
-GeoQuake **zəlzələnin nə vaxt baş verəcəyini proqnozlaşdırmır**. Göstərilən məlumatlar USGS-in açıq məlumatlarına əsaslanır və rəsmi təhlükəsizlik tövsiyəsi əvəzinə istifadə edilməməlidir.
+Manual test scenarios for the API and the UI are in [`04_QA/test_scenarios.md`](04_QA/test_scenarios.md).
 
-## 📄 Mənbə
+## 🔒 Privacy
 
-Zəlzələ məlumatları: [USGS Earthquake Hazards Program](https://earthquake.usgs.gov/).
+The site uses [GoatCounter](https://www.goatcounter.com/) for anonymous, cookie-free visit statistics. No personal data is collected. Your menu options are stored only in your own browser (`localStorage`).
+
+## 🗺 Roadmap
+
+- Statistics page (magnitude and depth charts, earthquakes over time)
+- Seismic **risk classification** (LOW / MEDIUM / HIGH) from historical data — a statistical assessment, *not* a prediction
+- User accounts and saved locations
+- Docker setup (`docker-compose up --build`) and automated tests
+
+## ⚠️ Disclaimer
+
+GeoQuake **does not predict earthquakes**. It only displays past events reported by USGS and must not replace official safety guidance.
+
+## 👤 Author
+
+**Mikayil Hasanov** — AI & Machine Learning Engineer, Geophysics Engineering student
+[LinkedIn](https://www.linkedin.com/in/mikayil-hasanov-23b1b1385/) · [GitHub](https://github.com/mickael044)
+
+## 📄 Data sources
+
+Earthquake data: [USGS](https://earthquake.usgs.gov/) · Maps: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, © OpenTopoMap, Esri · Geocoding: Nominatim
